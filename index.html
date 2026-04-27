@@ -405,6 +405,10 @@ html, body {
           <input class="field-input" id="cf-course" type="text" placeholder="球场名称">
         </div>
         <div class="field-row">
+          <span class="field-label">城市</span>
+          <input class="field-input" id="cf-location" type="text" placeholder="如：杭州">
+        </div>
+        <div class="field-row">
           <span class="field-label">日期</span>
           <input class="field-input" id="cf-date" type="date">
         </div>
@@ -613,7 +617,7 @@ function formatDate(dateStr) {
 
 // ── OCR ──
 async function parseScreenshot(file, playerName) {
-  const base64 = await fileToBase64(file);
+  const base64 = await compressImage(file);
   const url = window.SCF_URL || '';
   if (!url) throw new Error('SCF_URL not configured');
   const res = await fetch(url, {
@@ -626,6 +630,26 @@ async function parseScreenshot(file, playerName) {
   if (data.error) throw new Error(data.error);
   return processOcrResult(data);
 }
+
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const maxW = 1200;
+      let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.82).split(',')[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片读取失败')); };
+    img.src = url;
+  });
+}
+
 function processOcrResult(data) {
   const holes = Array.isArray(data.holeScores) ? data.holeScores : [];
   const birdies = holes.filter(s => s === -1).length;
@@ -652,17 +676,12 @@ function processOcrResult(data) {
     parsedFromScreenshot: true
   };
 }
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 // ── SPEECH ──
 function createSpeechInput(micBtn, textarea, labelEl) {
+  if (micBtn._speechReady) return; // prevent duplicate binding
+  micBtn._speechReady = true;
+
   const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRec) {
     micBtn.style.display = 'none';
@@ -671,6 +690,7 @@ function createSpeechInput(micBtn, textarea, labelEl) {
   }
   let rec = null;
   let listening = false;
+
   micBtn.addEventListener('click', () => {
     if (listening) { rec && rec.stop(); return; }
     rec = new SpeechRec();
@@ -688,10 +708,16 @@ function createSpeechInput(micBtn, textarea, labelEl) {
       const text = e.results[0][0].transcript;
       textarea.value = (textarea.value ? textarea.value + ' ' : '') + text;
     };
-    rec.onerror = () => reset();
+    rec.onerror = e => {
+      if (e.error === 'not-allowed') {
+        alert('请在 Safari 设置中允许麦克风访问，然后重试。');
+      }
+      reset();
+    };
     rec.onend = () => reset();
-    rec.start();
+    try { rec.start(); } catch(e) { reset(); }
   });
+
   function reset() {
     listening = false;
     micBtn.classList.remove('listening');
@@ -764,7 +790,7 @@ function roundCardHTML(r) {
       <div class="round-card-top">
         <div>
           <div class="round-course">${escHtml(r.course || '未知球场')}</div>
-          <div class="round-date">${formatDate(r.date)}</div>
+          <div class="round-date">${r.location ? escHtml(r.location) + ' · ' : ''}${formatDate(r.date)}</div>
         </div>
         <div class="round-score-block">
           <div class="round-score">${r.totalScore ?? '--'}</div>
@@ -836,6 +862,7 @@ async function handleScreenshot(file) {
 
 function populateConfirmForm(data) {
   document.getElementById('cf-course').value = data?.course || '';
+  document.getElementById('cf-location').value = data?.location || '';
   document.getElementById('cf-date').value = data?.date || today();
   document.getElementById('cf-score').value = data?.totalScore || '';
   document.getElementById('cf-par').value = data?.parTotal || 72;
@@ -855,6 +882,7 @@ function readConfirmForm() {
   const score = parseInt(document.getElementById('cf-score').value) || null;
   const par = parseInt(document.getElementById('cf-par').value) || 72;
   draftRound.course = document.getElementById('cf-course').value.trim();
+  draftRound.location = document.getElementById('cf-location').value.trim();
   draftRound.date = document.getElementById('cf-date').value;
   draftRound.totalScore = score;
   draftRound.parTotal = par;
@@ -913,6 +941,7 @@ function showDetail(id) {
     ? (r.relativeScore === 0 ? 'E（平标准杆）' : (r.relativeScore > 0 ? '+' : '') + r.relativeScore + ' 超标准杆')
     : '';
   document.getElementById('det-course').textContent = r.course || '未知球场';
+  document.getElementById('det-course-sub').textContent = r.location || '';
   document.getElementById('det-date').textContent = formatDate(r.date);
   document.getElementById('det-score').textContent = r.totalScore ?? '--';
   document.getElementById('det-relative').textContent = rel;
