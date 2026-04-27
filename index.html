@@ -321,6 +321,53 @@ html, body {
   border: none; border-radius: 12px; font-size: 20px;
   font-family: inherit; padding: 14px 48px; cursor: pointer;
 }
+
+/* ── SETTINGS ── */
+.header-gear { background: none; border: none; color: rgba(255,255,255,0.75); font-size: 24px; cursor: pointer; padding: 8px; line-height: 1; }
+.settings-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: flex-end; }
+.settings-modal.active { display: flex; }
+.settings-body { background: var(--white); border-radius: 20px 20px 0 0; padding: 28px 24px 48px; width: 100%; }
+.settings-title { font-size: 26px; font-weight: 700; margin-bottom: 20px; }
+.settings-row { margin-bottom: 14px; }
+
+/* ── MONTH CARD ── */
+.month-card { background: linear-gradient(135deg, var(--gold-light), #fff8e8); border: 2px solid var(--gold); border-radius: 16px; padding: 18px 20px; margin-bottom: 16px; }
+.month-card-title { font-size: 17px; color: var(--gold); font-weight: 600; margin-bottom: 10px; }
+.month-stats { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 6px; }
+.month-stat-item { font-size: 22px; font-weight: 700; color: var(--text-dark); }
+.month-stat-item span { font-size: 16px; font-weight: 400; color: var(--text-mid); margin-left: 2px; }
+.month-sub { font-size: 18px; color: var(--text-mid); margin-top: 4px; }
+
+/* ── HALL OF FAME ── */
+.hof-label { font-size: 18px; color: var(--text-light); margin: 16px 0 10px; }
+.hof-card { background: var(--white); border: 2px solid var(--gold); border-radius: 16px; padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.hof-card:active { background: var(--gold-light); }
+.hof-rank { font-size: 28px; }
+.hof-info { flex: 1; }
+.hof-course { font-size: 20px; font-weight: 600; }
+.hof-date { font-size: 16px; color: var(--text-light); margin-top: 2px; }
+.hof-score { font-size: 44px; font-weight: 700; color: var(--gold); line-height: 1; }
+
+/* ── AUTOCOMPLETE ── */
+.autocomplete-dropdown { background: var(--white); border: 2px solid var(--green-mid); border-radius: 12px; margin-top: 4px; overflow: hidden; display: none; }
+.autocomplete-item { padding: 14px 16px; font-size: 20px; cursor: pointer; border-bottom: 1px solid var(--border); }
+.autocomplete-item:last-child { border-bottom: none; }
+.autocomplete-item:active { background: var(--green-light); }
+
+/* ── VALIDATION ERROR ── */
+.field-error { color: var(--red-soft); font-size: 18px; padding: 8px 4px 4px; display: none; }
+
+/* ── EDIT BUTTON ── */
+.btn-edit { display: block; width: 100%; background: var(--white); color: var(--green-deep); border: 2px solid var(--green-deep); border-radius: 14px; font-size: 20px; font-family: inherit; padding: 16px; cursor: pointer; margin-bottom: 12px; text-align: center; }
+
+/* ── MILESTONE MODAL ── */
+.milestone-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,38,25,0.95); z-index: 300; flex-direction: column; align-items: center; justify-content: center; padding: 40px 28px; text-align: center; }
+.milestone-modal.active { display: flex; }
+.milestone-emoji { font-size: 88px; margin-bottom: 20px; animation: pop 0.4s ease-out; }
+@keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.milestone-title { font-size: 34px; font-weight: 700; color: var(--gold); margin-bottom: 14px; }
+.milestone-msg { font-size: 22px; color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 36px; }
+.btn-milestone-next { background: var(--gold); color: var(--white); border: none; border-radius: 14px; font-size: 22px; font-weight: 600; font-family: inherit; padding: 18px 40px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -330,7 +377,7 @@ html, body {
   <div class="setup-wrap">
     <div class="setup-emoji">⛳️</div>
     <h1 class="setup-title">欢迎，阿宝 ⛳️</h1>
-    <p class="setup-sub">你在高球玩伴里用的是什么名字？（用来识别截图）</p>
+    <p class="setup-sub">你叫什么名字？记录里会用到。</p>
     <form id="setup-form">
       <label class="setup-label" for="setup-name">你的名字</label>
       <input class="setup-input" id="setup-name" type="text" placeholder="宝" maxlength="10" autocomplete="off">
@@ -343,8 +390,12 @@ html, body {
 <div class="view" id="view-home">
   <div class="header">
     <span class="header-title">⛳️ 阿宝的高尔夫日记</span>
+    <button class="header-gear" id="btn-settings">⚙️</button>
   </div>
   <div class="scroll-body">
+
+    <!-- Month stats -->
+    <div class="month-card" id="month-card" style="display:none"></div>
 
     <!-- Year stats -->
     <div class="year-card" id="year-card">
@@ -373,6 +424,9 @@ html, body {
     <!-- Add button -->
     <button class="btn-primary" id="btn-add" style="margin-bottom:20px">＋ 记录这场球</button>
 
+    <!-- Hall of Fame -->
+    <div id="hall-of-fame" style="display:none"></div>
+
     <!-- Rounds list -->
     <div class="rounds-label">打球记录</div>
     <div id="rounds-list"></div>
@@ -397,8 +451,9 @@ html, body {
         <div class="confirm-section-title">基本信息</div>
         <div class="field-row">
           <span class="field-label">球场</span>
-          <input class="field-input" id="cf-course" type="text" placeholder="球场名称">
+          <input class="field-input" id="cf-course" type="text" placeholder="球场名称" autocomplete="off">
         </div>
+        <div class="autocomplete-dropdown" id="course-dropdown"></div>
         <div class="field-row">
           <span class="field-label">城市</span>
           <input class="field-input" id="cf-location" type="text" placeholder="如：杭州">
@@ -411,6 +466,7 @@ html, body {
           <span class="field-label">总杆数</span>
           <input class="field-input" id="cf-score" type="number" placeholder="85" min="50" max="200" inputmode="numeric">
         </div>
+        <div class="field-error" id="score-error">请先填写今天的总杆数</div>
         <div class="field-row">
           <span class="field-label">标准杆</span>
           <input class="field-input" id="cf-par" type="number" placeholder="72" min="60" max="80" inputmode="numeric">
@@ -548,6 +604,7 @@ html, body {
     </div>
 
     <button class="btn-share" id="btn-share">分享海报 ✨</button>
+    <button class="btn-edit" id="btn-edit">编辑这场球</button>
     <button class="btn-delete" id="btn-delete">删除这条记录</button>
 
   </div>
@@ -559,6 +616,27 @@ html, body {
   <img id="poster-img" class="poster-img" alt="海报">
   <p class="poster-hint">长按图片 → 存储到相册，然后发朋友圈</p>
   <button class="btn-poster-close" id="btn-close-poster">关闭</button>
+</div>
+
+<!-- ═══ SETTINGS MODAL ═══ -->
+<div class="settings-modal" id="settings-modal">
+  <div class="settings-body">
+    <div class="settings-title">⚙️ 设置</div>
+    <div class="settings-row">
+      <button class="btn-primary" id="btn-export">导出数据备份 📥</button>
+    </div>
+    <div class="settings-row" style="margin-top:12px">
+      <button class="btn-primary secondary" id="btn-close-settings">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MILESTONE MODAL ═══ -->
+<div class="milestone-modal" id="milestone-modal">
+  <div class="milestone-emoji" id="ms-emoji"></div>
+  <div class="milestone-title" id="ms-title"></div>
+  <div class="milestone-msg" id="ms-msg"></div>
+  <button class="btn-milestone-next" id="btn-milestone-next">太棒了！→</button>
 </div>
 
 <script src="config.js"></script>
@@ -591,6 +669,14 @@ function deleteRound(id) {
   const rounds = getRounds().filter(r => r.id !== id);
   localStorage.setItem(ROUNDS_KEY, JSON.stringify(rounds));
 }
+function updateRound(id, data) {
+  const rounds = getRounds();
+  const idx = rounds.findIndex(r => r.id === id);
+  if (idx === -1) return;
+  rounds[idx] = { ...rounds[idx], ...data };
+  localStorage.setItem(ROUNDS_KEY, JSON.stringify(rounds));
+  return rounds[idx];
+}
 
 // ── STATS ──
 function getYearStats(rounds) {
@@ -601,11 +687,35 @@ function getYearStats(rounds) {
   const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
   const best = scores.length ? Math.min(...scores) : null;
   const birdies = thisYear.reduce((sum, r) => sum + (r.birdies || 0), 0);
+  const eagles = thisYear.reduce((sum, r) => sum + (r.eagles || 0), 0);
   const sorted = [...thisYear].sort((a, b) => a.date.localeCompare(b.date));
   const firstScore = sorted[0]?.totalScore;
-  const improvement = firstScore && best ? firstScore - best : null;
-  return { count: thisYear.length, avg, best, birdies, improvement };
+  const latestScore = sorted[sorted.length - 1]?.totalScore;
+  // Compare first round to most recent round (not best — that's misleading)
+  const improvement = (firstScore && latestScore && sorted.length > 1) ? firstScore - latestScore : null;
+  return { count: thisYear.length, avg, best, birdies, eagles, improvement };
 }
+
+function getMonthStats(rounds) {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const thisMonth = rounds.filter(r => {
+    if (!r.date) return false;
+    const d = new Date(r.date + 'T00:00:00');
+    return d.getFullYear() === y && d.getMonth() === m;
+  });
+  if (thisMonth.length === 0) return null;
+  const scores = thisMonth.map(r => r.totalScore).filter(Boolean);
+  const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  const best = scores.length ? Math.min(...scores) : null;
+  const birdies = thisMonth.reduce((s, r) => s + (r.birdies || 0), 0);
+  const eagles = thisMonth.reduce((s, r) => s + (r.eagles || 0), 0);
+  const courseCount = {};
+  thisMonth.forEach(r => { if (r.course) courseCount[r.course] = (courseCount[r.course] || 0) + 1; });
+  const topEntry = Object.entries(courseCount).sort((a, b) => b[1] - a[1])[0];
+  return { count: thisMonth.length, avg, best, birdies, eagles, topCourse: topEntry?.[0], topCourseCount: topEntry?.[1] };
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
@@ -743,6 +853,11 @@ function initSetup() {
 
 function initHome() {
   const rounds = getRounds();
+
+  // Month card
+  renderMonthCard(rounds);
+
+  // Year stats
   const stats = getYearStats(rounds);
   const yearCard = document.getElementById('year-card');
   if (stats && stats.count > 0) {
@@ -750,16 +865,23 @@ function initHome() {
     document.getElementById('stat-count').textContent = stats.count;
     document.getElementById('stat-avg').textContent = stats.avg ?? '--';
     document.getElementById('stat-best').textContent = stats.best ?? '--';
-    document.getElementById('stat-birds').textContent = stats.birdies;
+    document.getElementById('stat-birds').textContent = stats.birdies + (stats.eagles > 0 ? ` (🦅×${stats.eagles})` : '');
     const progEl = document.getElementById('stat-progress');
-    if (stats.improvement && stats.improvement > 0) {
-      progEl.textContent = `🎉 今年进步了 ${stats.improvement} 杆！加油阿宝！`;
+    if (stats.improvement > 0) {
+      progEl.textContent = `🎉 第一场到最近一场，进步了 ${stats.improvement} 杆！`;
+    } else if (stats.improvement < 0) {
+      progEl.textContent = `最近状态在调整，继续努力 💪`;
     } else {
       progEl.textContent = '继续加油，每一场都是进步！';
     }
   } else {
     yearCard.style.display = 'none';
   }
+
+  // Hall of fame
+  renderHallOfFame(rounds);
+
+  // Rounds list
   const list = document.getElementById('rounds-list');
   const empty = document.getElementById('rounds-empty');
   if (rounds.length === 0) {
@@ -774,6 +896,49 @@ function initHome() {
   }
 }
 
+function renderMonthCard(rounds) {
+  const el = document.getElementById('month-card');
+  const stats = getMonthStats(rounds);
+  const now = new Date();
+  if (!stats) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = `
+    <div class="month-card-title">${now.getMonth() + 1}月成绩</div>
+    <div class="month-stats">
+      <div class="month-stat-item">${stats.count}<span>场</span></div>
+      <div class="month-stat-item">${stats.avg ?? '--'}<span>均杆</span></div>
+      <div class="month-stat-item">${stats.best ?? '--'}<span>最好</span></div>
+      ${stats.birdies > 0 ? `<div class="month-stat-item">🐦×${stats.birdies}</div>` : ''}
+      ${stats.eagles > 0 ? `<div class="month-stat-item">🦅×${stats.eagles}</div>` : ''}
+    </div>
+    ${stats.topCourse ? `<div class="month-sub">最常打：${escHtml(stats.topCourse)}（${stats.topCourseCount}次）</div>` : ''}
+  `;
+}
+
+function renderHallOfFame(rounds) {
+  const el = document.getElementById('hall-of-fame');
+  const scored = rounds.filter(r => r.totalScore);
+  if (scored.length < 2) { el.style.display = 'none'; return; }
+  const top3 = [...scored].sort((a, b) => a.totalScore - b.totalScore).slice(0, 3);
+  el.style.display = '';
+  el.innerHTML = `
+    <div class="hof-label">🏆 个人最好成绩</div>
+    ${top3.map((r, i) => `
+      <div class="hof-card" data-id="${r.id}">
+        <span class="hof-rank">${['🥇','🥈','🥉'][i]}</span>
+        <div class="hof-info">
+          <div class="hof-course">${escHtml(r.course || '未知球场')}</div>
+          <div class="hof-date">${r.location ? escHtml(r.location) + ' · ' : ''}${formatDate(r.date)}</div>
+        </div>
+        <div class="hof-score">${r.totalScore}</div>
+      </div>
+    `).join('')}
+  `;
+  el.querySelectorAll('.hof-card').forEach(card => {
+    card.addEventListener('click', () => showDetail(card.dataset.id));
+  });
+}
+
 function roundCardHTML(r) {
   const icons = [];
   if (r.eagles > 0) icons.push(`<span class="score-icon birdie">🦅 ×${r.eagles}</span>`);
@@ -781,7 +946,9 @@ function roundCardHTML(r) {
   if (r.pars > 0) icons.push(`<span class="score-icon par">◯ ×${r.pars}</span>`);
   if (r.bogeys > 0) icons.push(`<span class="score-icon bogey">＋×${r.bogeys}</span>`);
   if (r.doublePlusBogeys > 0) icons.push(`<span class="score-icon dbl">＋＋×${r.doublePlusBogeys}</span>`);
-  const rel = r.relativeScore != null ? (r.relativeScore > 0 ? '+' + r.relativeScore : r.relativeScore) : '';
+  const rel = r.relativeScore != null
+    ? (r.relativeScore === 0 ? 'E' : (r.relativeScore > 0 ? '+' : '') + r.relativeScore)
+    : '';
   const notesText = r.notes ? r.notes : '<span style="color:var(--text-light);font-style:italic">暂无心得</span>';
   return `
     <div class="round-card" data-id="${r.id}">
@@ -801,13 +968,27 @@ function roundCardHTML(r) {
 }
 
 let draftRound = {};
+let editingRoundId = null;
 
-function initAddRound() {
-  draftRound = {};
-  populateConfirmForm();
-  initCompanions();
+function initAddRound(id) {
+  editingRoundId = id || null;
+  draftRound = id ? { ...getRoundById(id) } : {};
+
+  document.querySelector('#view-add .header-title').textContent = id ? '编辑这场球' : '记录这场球';
+  populateConfirmForm(id ? draftRound : null);
+  initCompanions(id ? (draftRound.companions || []) : []);
+  initAutocomplete();
   showStep('step-confirm');
+
   document.getElementById('btn-confirm-next').onclick = () => {
+    const score = document.getElementById('cf-score').value;
+    const errEl = document.getElementById('score-error');
+    if (!score) {
+      errEl.style.display = 'block';
+      document.getElementById('cf-score').focus();
+      return;
+    }
+    errEl.style.display = 'none';
     readConfirmForm();
     initNotesStep();
     showStep('step-notes');
@@ -815,10 +996,40 @@ function initAddRound() {
   document.getElementById('btn-save').onclick = saveAndReturn;
 }
 
+function initAutocomplete() {
+  const input = document.getElementById('cf-course');
+  const dropdown = document.getElementById('course-dropdown');
+  const allCourses = [...new Set(getRounds().map(r => r.course).filter(Boolean))];
+
+  input.oninput = () => {
+    const val = input.value.trim();
+    if (!val || allCourses.length === 0) { dropdown.style.display = 'none'; return; }
+    const matches = allCourses.filter(c => c.includes(val));
+    if (matches.length === 0) { dropdown.style.display = 'none'; return; }
+    dropdown.innerHTML = matches.map(c =>
+      `<div class="autocomplete-item" data-course="${escHtml(c)}">${escHtml(c)}</div>`
+    ).join('');
+    dropdown.style.display = 'block';
+    dropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+      item.addEventListener('click', () => selectCourse(item.dataset.course));
+    });
+  };
+  input.onblur = () => setTimeout(() => { dropdown.style.display = 'none'; }, 200);
+}
+
+function selectCourse(name) {
+  document.getElementById('cf-course').value = name;
+  document.getElementById('course-dropdown').style.display = 'none';
+  const prev = getRounds().find(r => r.course === name && r.location);
+  if (prev && !document.getElementById('cf-location').value) {
+    document.getElementById('cf-location').value = prev.location;
+  }
+}
+
 let companions = [];
 
-function initCompanions() {
-  companions = [];
+function initCompanions(initial) {
+  companions = initial ? [...initial] : [];
   renderCompanionTags();
   const input = document.getElementById('cf-companion-input');
   document.getElementById('btn-add-companion').onclick = () => {
@@ -841,19 +1052,19 @@ function removeCompanion(i) {
   renderCompanionTags();
 }
 
-function populateConfirmForm() {
-  document.getElementById('cf-course').value = '';
-  document.getElementById('cf-location').value = '';
-  document.getElementById('cf-date').value = today();
-  document.getElementById('cf-score').value = '';
-  document.getElementById('cf-par').value = 72;
-  document.getElementById('cf-eagles').value = '';
-  document.getElementById('cf-birdies').value = '';
-  document.getElementById('cf-pars').value = '';
-  document.getElementById('cf-bogeys').value = '';
-  document.getElementById('cf-dbl').value = '';
-  document.getElementById('cf-front').value = '';
-  document.getElementById('cf-back').value = '';
+function populateConfirmForm(data) {
+  document.getElementById('cf-course').value = data?.course || '';
+  document.getElementById('cf-location').value = data?.location || '';
+  document.getElementById('cf-date').value = data?.date || today();
+  document.getElementById('cf-score').value = data?.totalScore || '';
+  document.getElementById('cf-par').value = data?.parTotal || 72;
+  document.getElementById('cf-eagles').value = data?.eagles || '';
+  document.getElementById('cf-birdies').value = data?.birdies || '';
+  document.getElementById('cf-pars').value = data?.pars || '';
+  document.getElementById('cf-bogeys').value = data?.bogeys || '';
+  document.getElementById('cf-dbl').value = data?.doublePlusBogeys || '';
+  document.getElementById('cf-front').value = data?.frontNine || '';
+  document.getElementById('cf-back').value = data?.backNine || '';
 }
 
 function readConfirmForm() {
@@ -883,8 +1094,58 @@ function initNotesStep() {
 function saveAndReturn() {
   draftRound.notes = document.getElementById('ta-notes').value.trim();
   draftRound.improvement = document.getElementById('ta-improve').value.trim();
-  const saved = saveRound(draftRound);
-  generatePoster(saved); // show poster immediately after saving
+
+  if (editingRoundId) {
+    updateRound(editingRoundId, draftRound);
+    editingRoundId = null;
+    initHome();
+    showView('view-home');
+  } else {
+    const saved = saveRound(draftRound);
+    const allRounds = getRounds();
+    const milestones = checkMilestones(saved, allRounds);
+    if (milestones.length > 0) {
+      showMilestone(milestones[0], () => generatePoster(saved));
+    } else {
+      generatePoster(saved);
+    }
+  }
+}
+
+function checkMilestones(newRound, allRounds) {
+  const prior = allRounds.filter(r => r.id !== newRound.id);
+  const milestones = [];
+  if (prior.length === 0) {
+    milestones.push({ emoji: '🎉', title: '第一场记录！', msg: '阿宝开始记录她的高尔夫旅程了！每一场都是成长。' });
+  }
+  const priorScores = prior.map(r => r.totalScore).filter(Boolean);
+  if (newRound.totalScore && (priorScores.length === 0 || newRound.totalScore < Math.min(...priorScores))) {
+    if (priorScores.length > 0) {
+      milestones.push({ emoji: '🏆', title: '新的个人最好成绩！', msg: `${newRound.totalScore}杆！打破了自己的纪录！` });
+    }
+  }
+  if (newRound.totalScore) {
+    const prevBest = priorScores.length ? Math.min(...priorScores) : 999;
+    if (newRound.totalScore < 90 && prevBest >= 90) milestones.push({ emoji: '🎊', title: '首次破90！', msg: '阿宝第一次打进90杆！里程碑！' });
+    else if (newRound.totalScore < 100 && prevBest >= 100) milestones.push({ emoji: '🎊', title: '首次破百！', msg: '阿宝第一次打进100杆！太棒了！' });
+  }
+  const hadBirdie = prior.some(r => (r.birdies || 0) > 0);
+  if (!hadBirdie && (newRound.birdies || 0) > 0) milestones.push({ emoji: '🐦', title: '第一只小鸟！', msg: '打出了第一只 Birdie！以后会越来越多的！' });
+  const hadEagle = prior.some(r => (r.eagles || 0) > 0);
+  if (!hadEagle && (newRound.eagles || 0) > 0) milestones.push({ emoji: '🦅', title: '第一只老鹰！', msg: '打出了第一只 Eagle！这可不容易！' });
+  const total = allRounds.length;
+  if ([5, 10, 20, 50, 100].includes(total)) milestones.push({ emoji: '⭐', title: `第${total}场！`, msg: `阿宝已经记录了${total}场球！坚持就是进步！` });
+  return milestones;
+}
+
+let milestoneCallback = null;
+function showMilestone(m, callback) {
+  milestoneCallback = callback;
+  document.getElementById('ms-emoji').textContent = m.emoji;
+  document.getElementById('ms-title').textContent = m.title;
+  document.getElementById('ms-msg').textContent = m.msg;
+  document.getElementById('milestone-modal').classList.add('active');
+  showConfetti();
 }
 
 function showConfetti() {
@@ -918,7 +1179,9 @@ function showDetail(id) {
   const r = getRoundById(id);
   if (!r) return;
   const rel = r.relativeScore != null
-    ? (r.relativeScore === 0 ? 'E（平标准杆）' : (r.relativeScore > 0 ? '+' : '') + r.relativeScore + ' 超标准杆')
+    ? (r.relativeScore === 0 ? 'E（平标准杆）'
+      : r.relativeScore > 0 ? '+' + r.relativeScore + ' 超标准杆'
+      : r.relativeScore + ' 低于标准杆')
     : '';
   document.getElementById('det-course').textContent = r.course || '未知球场';
   document.getElementById('det-course-sub').textContent = r.location || '';
@@ -946,6 +1209,10 @@ function showDetail(id) {
   document.getElementById('det-notes').className = 'detail-text' + (r.notes ? '' : ' empty');
   document.getElementById('det-improve').textContent = r.improvement || '暂无记录';
   document.getElementById('det-improve').className = 'detail-text' + (r.improvement ? '' : ' empty');
+  document.getElementById('btn-edit').onclick = () => {
+    initAddRound(id);
+    showView('view-add');
+  };
   document.getElementById('btn-delete').onclick = () => {
     if (confirm('确定删除这条记录吗？')) {
       deleteRound(id);
@@ -1148,6 +1415,29 @@ document.addEventListener('DOMContentLoaded', () => {
     initHome();
     showView('view-home');
     showConfetti();
+  });
+
+  // Settings
+  document.getElementById('btn-settings').addEventListener('click', () => {
+    document.getElementById('settings-modal').classList.add('active');
+  });
+  document.getElementById('btn-close-settings').addEventListener('click', () => {
+    document.getElementById('settings-modal').classList.remove('active');
+  });
+  document.getElementById('btn-export').addEventListener('click', () => {
+    const data = JSON.stringify(getRounds(), null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `高尔夫日记备份_${today()}.json`;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  });
+
+  // Milestone modal
+  document.getElementById('btn-milestone-next').addEventListener('click', () => {
+    document.getElementById('milestone-modal').classList.remove('active');
+    if (milestoneCallback) { milestoneCallback(); milestoneCallback = null; }
   });
 
   document.getElementById('btn-add').addEventListener('click', () => {
