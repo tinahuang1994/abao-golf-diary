@@ -374,30 +374,8 @@ html, body {
   </div>
   <div class="scroll-body">
 
-    <!-- Step 1: Upload -->
-    <div class="step" id="step-upload">
-      <p class="step-label">上传高球玩伴记分卡截图，自动识别数据</p>
-      <div class="upload-zone" id="upload-zone">
-        <div class="upload-icon">📷</div>
-        <div class="upload-text">上传截图</div>
-        <div class="upload-sub">点击选择图片</div>
-      </div>
-      <input type="file" id="file-input" accept="image/*">
-      <button class="btn-primary ghost" id="btn-manual">手动输入</button>
-    </div>
-
-    <!-- Step 2: Loading -->
-    <div class="step" id="step-loading">
-      <div class="ocr-loading">
-        <div class="spinner"></div>
-        <div class="loading-text">正在识别截图...</div>
-      </div>
-    </div>
-
-    <!-- Step 3: Confirm data -->
+    <!-- Step 1: Fill in data -->
     <div class="step" id="step-confirm">
-      <p class="step-label">确认一下数据，可以修改</p>
-
       <div class="confirm-section">
         <div class="confirm-section-title">基本信息</div>
         <div class="field-row">
@@ -431,32 +409,29 @@ html, body {
       </div>
 
       <div class="confirm-section">
-        <div class="confirm-section-title">成绩分布（由截图计算）</div>
-        <div class="stat-grid">
-          <div class="stat-box birdie">
-            <div class="stat-box-value" id="cs-birdies">--</div>
-            <div class="stat-box-label">🐦 小鸟</div>
-          </div>
-          <div class="stat-box par">
-            <div class="stat-box-value" id="cs-pars">--</div>
-            <div class="stat-box-label">◯ 帕</div>
-          </div>
-          <div class="stat-box bogey">
-            <div class="stat-box-value" id="cs-bogeys">--</div>
-            <div class="stat-box-label">+ 柏忌</div>
-          </div>
-          <div class="stat-box dbl">
-            <div class="stat-box-value" id="cs-dbl">--</div>
-            <div class="stat-box-label">++ 双柏忌+</div>
-          </div>
+        <div class="confirm-section-title">成绩分布</div>
+        <div class="field-row">
+          <span class="field-label">🐦 小鸟</span>
+          <input class="field-input" id="cf-birdies" type="number" placeholder="0" min="0" inputmode="numeric">
+        </div>
+        <div class="field-row">
+          <span class="field-label">◯ 帕</span>
+          <input class="field-input" id="cf-pars" type="number" placeholder="0" min="0" inputmode="numeric">
+        </div>
+        <div class="field-row">
+          <span class="field-label">+ 柏忌</span>
+          <input class="field-input" id="cf-bogeys" type="number" placeholder="0" min="0" inputmode="numeric">
+        </div>
+        <div class="field-row">
+          <span class="field-label">++ 双柏忌+</span>
+          <input class="field-input" id="cf-dbl" type="number" placeholder="0" min="0" inputmode="numeric">
         </div>
       </div>
 
       <div class="confirm-section">
         <div class="confirm-section-title">同伴</div>
-        <div class="companions-list" id="companions-list"></div>
-        <div class="field-row" style="margin-top:12px">
-          <span class="field-label">修改同伴</span>
+        <div class="field-row">
+          <span class="field-label">同伴姓名</span>
           <input class="field-input" id="cf-companions" type="text" placeholder="用、分隔">
         </div>
       </div>
@@ -802,20 +777,8 @@ let draftRound = {};
 
 function initAddRound() {
   draftRound = {};
-  showStep('step-upload');
-  const zone = document.getElementById('upload-zone');
-  const fileInput = document.getElementById('file-input');
-  zone.onclick = () => fileInput.click();
-  fileInput.onchange = e => {
-    const file = e.target.files[0];
-    if (file) handleScreenshot(file);
-    fileInput.value = '';
-  };
-  document.getElementById('btn-manual').onclick = () => {
-    draftRound = { parsedFromScreenshot: false };
-    populateConfirmForm(null);
-    showStep('step-confirm');
-  };
+  populateConfirmForm();
+  showStep('step-confirm');
   document.getElementById('btn-confirm-next').onclick = () => {
     readConfirmForm();
     initNotesStep();
@@ -824,44 +787,19 @@ function initAddRound() {
   document.getElementById('btn-save').onclick = saveAndReturn;
 }
 
-async function handleScreenshot(file) {
-  showStep('step-loading');
-  const settings = getSettings();
-  const playerName = settings.playerName || '宝';
-  try {
-    const result = await parseScreenshot(file, playerName);
-    Object.assign(draftRound, result);
-    populateConfirmForm(result);
-    showStep('step-confirm');
-  } catch (err) {
-    // Show whatever partial data we have; only alert if truly nothing
-    const hasPartial = draftRound.totalScore || draftRound.course;
-    if (!hasPartial) {
-      alert('截图识别失败：' + err.message + '\n\n请手动输入数据。');
-      populateConfirmForm(null);
-    } else {
-      populateConfirmForm(draftRound);
-    }
-    showStep('step-confirm');
-  }
-}
-
-function populateConfirmForm(data) {
-  document.getElementById('cf-course').value = data?.course || '';
-  document.getElementById('cf-location').value = data?.location || '';
-  document.getElementById('cf-date').value = data?.date || today();
-  document.getElementById('cf-score').value = data?.totalScore || '';
-  document.getElementById('cf-par').value = data?.parTotal || 72;
-  document.getElementById('cs-birdies').textContent = data?.birdies ?? '--';
-  document.getElementById('cs-pars').textContent = data?.pars ?? '--';
-  document.getElementById('cs-bogeys').textContent = data?.bogeys ?? '--';
-  document.getElementById('cs-dbl').textContent = data?.doublePlusBogeys ?? '--';
-  document.getElementById('cf-front').value = data?.frontNine || '';
-  document.getElementById('cf-back').value = data?.backNine || '';
-  const comps = data?.companions || [];
-  document.getElementById('companions-list').innerHTML =
-    comps.length ? comps.map(c => `<span class="companion-tag">${escHtml(c)}</span>`).join('') : '<span style="color:var(--text-light)">无同伴数据</span>';
-  document.getElementById('cf-companions').value = comps.join('、');
+function populateConfirmForm() {
+  document.getElementById('cf-course').value = '';
+  document.getElementById('cf-location').value = '';
+  document.getElementById('cf-date').value = today();
+  document.getElementById('cf-score').value = '';
+  document.getElementById('cf-par').value = 72;
+  document.getElementById('cf-birdies').value = '';
+  document.getElementById('cf-pars').value = '';
+  document.getElementById('cf-bogeys').value = '';
+  document.getElementById('cf-dbl').value = '';
+  document.getElementById('cf-front').value = '';
+  document.getElementById('cf-back').value = '';
+  document.getElementById('cf-companions').value = '';
 }
 
 function readConfirmForm() {
@@ -875,6 +813,10 @@ function readConfirmForm() {
   draftRound.relativeScore = score != null ? score - par : null;
   draftRound.frontNine = parseInt(document.getElementById('cf-front').value) || null;
   draftRound.backNine = parseInt(document.getElementById('cf-back').value) || null;
+  draftRound.birdies = parseInt(document.getElementById('cf-birdies').value) || 0;
+  draftRound.pars = parseInt(document.getElementById('cf-pars').value) || 0;
+  draftRound.bogeys = parseInt(document.getElementById('cf-bogeys').value) || 0;
+  draftRound.doublePlusBogeys = parseInt(document.getElementById('cf-dbl').value) || 0;
   const compStr = document.getElementById('cf-companions').value;
   draftRound.companions = compStr ? compStr.split(/[、,，\s]+/).filter(Boolean) : [];
 }
@@ -887,10 +829,8 @@ function initNotesStep() {
 function saveAndReturn() {
   draftRound.notes = document.getElementById('ta-notes').value.trim();
   draftRound.improvement = document.getElementById('ta-improve').value.trim();
-  saveRound(draftRound);
-  initHome();
-  showView('view-home');
-  showConfetti();
+  const saved = saveRound(draftRound);
+  generatePoster(saved); // show poster immediately after saving
 }
 
 function showConfetti() {
@@ -1149,6 +1089,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('btn-close-poster').addEventListener('click', () => {
     document.getElementById('poster-modal').classList.remove('active');
+    initHome();
+    showView('view-home');
+    showConfetti();
   });
 
   document.getElementById('btn-add').addEventListener('click', () => {
