@@ -471,15 +471,11 @@ html, body {
       <div class="notes-field-wrap">
         <div class="notes-label">今天的心得</div>
         <textarea class="notes-textarea" id="ta-notes" placeholder="今天有什么收获？比如握杆、挥杆、心态..."></textarea>
-        <button class="mic-btn" id="mic-notes" type="button">🎙️</button>
-        <div class="mic-label" id="mic-notes-label">点击说话</div>
       </div>
 
       <div class="notes-field-wrap">
         <div class="notes-label">下次要改进</div>
         <textarea class="notes-textarea" id="ta-improve" placeholder="这次哪里还不够好？下次重点练什么？"></textarea>
-        <button class="mic-btn" id="mic-improve" type="button">🎙️</button>
-        <div class="mic-label" id="mic-improve-label">点击说话</div>
       </div>
 
       <button class="btn-primary" id="btn-save">保存这场球 ✓</button>
@@ -825,16 +821,6 @@ function initAddRound() {
     initNotesStep();
     showStep('step-notes');
   };
-  createSpeechInput(
-    document.getElementById('mic-notes'),
-    document.getElementById('ta-notes'),
-    document.getElementById('mic-notes-label')
-  );
-  createSpeechInput(
-    document.getElementById('mic-improve'),
-    document.getElementById('ta-improve'),
-    document.getElementById('mic-improve-label')
-  );
   document.getElementById('btn-save').onclick = saveAndReturn;
 }
 
@@ -979,123 +965,165 @@ function showDetail(id) {
 // ── POSTER ──
 function generatePoster(r) {
   const canvas = document.getElementById('poster-canvas');
+  canvas.width = 750;
+  canvas.height = 1150;
+  const portrait = new Image();
+  portrait.crossOrigin = 'anonymous';
+  portrait.onload = () => { drawPoster(canvas, r, portrait); };
+  portrait.onerror = () => { drawPoster(canvas, r, null); };
+  portrait.src = 'icon-512.png';
+}
+
+function drawPoster(canvas, r, portrait) {
   const ctx = canvas.getContext('2d');
-  const W = 750, H = 1200;
+  const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
+  const F = '"PingFang SC","Helvetica Neue",sans-serif';
 
-  // Background gradient
-  const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#1B4D35');
-  bg.addColorStop(1, '#0D2619');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+  // ── SECTION 1: Hero (dark green, top 380px) ──
+  const heroH = 380;
+  ctx.fillStyle = '#1B4D35';
+  ctx.fillRect(0, 0, W, heroH);
 
-  // Decorative circles
-  ctx.fillStyle = 'rgba(255,255,255,0.04)';
-  ctx.beginPath(); ctx.arc(660, 160, 220, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(80, 980, 180, 0, Math.PI * 2); ctx.fill();
-
-  // Gold accent bar top
+  // Gold top bar
   ctx.fillStyle = '#C8972A';
-  ctx.fillRect(0, 0, W, 8);
+  ctx.fillRect(0, 0, W, 6);
 
-  // Brand
+  // Portrait circle (left side)
+  const cx = 175, cy = 190, radius = 130;
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.clip();
+  if (portrait) {
+    ctx.drawImage(portrait, cx - radius, cy - radius, radius * 2, radius * 2);
+  } else {
+    ctx.fillStyle = '#2D6A4F';
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `80px ${F}`;
+    ctx.textAlign = 'center';
+    ctx.fillText('⛳', cx, cy + 28);
+  }
+  ctx.restore();
+  // Circle border
+  ctx.strokeStyle = '#C8972A';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Right side: score block
+  const rx = 370;
+  ctx.textAlign = 'left';
+
   ctx.fillStyle = 'rgba(255,255,255,0.5)';
-  ctx.font = '28px "PingFang SC", "Helvetica Neue", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('⛳ 阿宝的高尔夫日记', W / 2, 70);
+  ctx.font = `26px ${F}`;
+  const courseLine = (r.location ? r.location + ' · ' : '') + (r.course || '未知球场');
+  ctx.fillText(courseLine.length > 14 ? courseLine.substring(0, 14) + '...' : courseLine, rx, 95);
 
-  // Course name
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 54px "PingFang SC", "Helvetica Neue", sans-serif';
-  ctx.fillText(r.course || '未知球场', W / 2, 160);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = `24px ${F}`;
+  ctx.fillText(formatDate(r.date), rx, 133);
 
-  // Date
-  ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.font = '30px "PingFang SC", "Helvetica Neue", sans-serif';
-  ctx.fillText(formatDate(r.date), W / 2, 210);
-
-  // Divider
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-  ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(60, 248); ctx.lineTo(690, 248); ctx.stroke();
-
-  // BIG score
   ctx.fillStyle = '#C8972A';
-  ctx.font = 'bold 180px "PingFang SC", "Helvetica Neue", sans-serif';
-  ctx.fillText(r.totalScore ?? '--', W / 2, 460);
+  ctx.font = `bold 130px ${F}`;
+  ctx.fillText(r.totalScore ?? '--', rx, 270);
 
-  // Relative label
   const rel = r.relativeScore != null
     ? (r.relativeScore === 0 ? 'E 平标准杆'
       : (r.relativeScore > 0 ? '+' + r.relativeScore : r.relativeScore) + ' 超标准杆')
     : '';
-  ctx.fillStyle = 'rgba(255,255,255,0.65)';
-  ctx.font = '34px "PingFang SC", "Helvetica Neue", sans-serif';
-  ctx.fillText(rel, W / 2, 520);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = `28px ${F}`;
+  ctx.fillText(rel, rx, 318);
 
-  // Divider
-  ctx.beginPath(); ctx.moveTo(60, 560); ctx.lineTo(690, 560); ctx.stroke();
+  // Brand line bottom of hero
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = `22px ${F}`;
+  ctx.fillText('⛳ 阿宝的高尔夫日记', W / 2, 364);
 
-  // Stats row
+  // ── SECTION 2: Stats (cream, 380-530px) ──
+  ctx.fillStyle = '#F0F7F4';
+  ctx.fillRect(0, heroH, W, 155);
+
   const stats = [
-    { icon: '🐦', count: r.birdies ?? 0, label: '小鸟', color: '#C8972A' },
-    { icon: '◯', count: r.pars ?? 0, label: '帕', color: '#74C69D' },
-    { icon: '+', count: r.bogeys ?? 0, label: '柏忌', color: '#FF8FA3' },
-    { icon: '++', count: r.doublePlusBogeys ?? 0, label: '双柏忌', color: '#FF4D6D' },
+    { label: '🐦 小鸟', count: r.birdies ?? 0, color: '#C8972A' },
+    { label: '◯ 帕', count: r.pars ?? 0, color: '#2D6A4F' },
+    { label: '+ 柏忌', count: r.bogeys ?? 0, color: '#E8534A' },
+    { label: '++ 双柏忌', count: r.doublePlusBogeys ?? 0, color: '#C0392B' },
   ];
   stats.forEach((s, i) => {
     const x = 93 + i * 188;
+    ctx.textAlign = 'center';
     ctx.fillStyle = s.color;
-    ctx.font = '42px "PingFang SC", "Helvetica Neue", sans-serif';
-    ctx.fillText(s.icon, x, 630);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 56px "PingFang SC", "Helvetica Neue", sans-serif';
-    ctx.fillText(String(s.count), x, 700);
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.font = '24px "PingFang SC", "Helvetica Neue", sans-serif';
-    ctx.fillText(s.label, x, 735);
+    ctx.font = `bold 52px ${F}`;
+    ctx.fillText(String(s.count), x, heroH + 75);
+    ctx.fillStyle = '#555550';
+    ctx.font = `22px ${F}`;
+    ctx.fillText(s.label, x, heroH + 115);
   });
 
-  // Divider
-  ctx.beginPath(); ctx.moveTo(60, 772); ctx.lineTo(690, 772); ctx.stroke();
+  // ── SECTION 3: Notes (white, 535–H) ──
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillRect(0, heroH + 155, W, H - heroH - 155);
 
-  // Notes quote
+  const noteTop = heroH + 155;
+  ctx.textAlign = 'left';
+
+  let y = noteTop + 50;
   if (r.notes) {
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = '28px "PingFang SC", "Helvetica Neue", sans-serif';
-    const snippet = r.notes.length > 50 ? r.notes.substring(0, 50) + '...' : r.notes;
-    wrapText(ctx, '\u201C' + snippet + '\u201D', W / 2, 830, 620, 42);
+    ctx.fillStyle = '#2D6A4F';
+    ctx.font = `bold 28px ${F}`;
+    ctx.fillText('今天的心得', 50, y);
+    y += 44;
+    ctx.fillStyle = '#333330';
+    ctx.font = `26px ${F}`;
+    y = wrapTextLeft(ctx, r.notes, 50, y, W - 100, 40, 4);
+    y += 20;
   }
 
-  // Bottom golf emoji
-  ctx.font = '90px sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.12)';
-  ctx.fillText('⛳', W / 2, 1080);
+  if (r.improvement) {
+    ctx.fillStyle = '#2D6A4F';
+    ctx.font = `bold 28px ${F}`;
+    ctx.fillText('下次要改进', 50, y);
+    y += 44;
+    ctx.fillStyle = '#333330';
+    ctx.font = `26px ${F}`;
+    wrapTextLeft(ctx, r.improvement, 50, y, W - 100, 40, 3);
+  }
 
-  // Gold bar bottom
+  // Gold bottom bar
   ctx.fillStyle = '#C8972A';
-  ctx.fillRect(0, H - 8, W, 8);
+  ctx.fillRect(0, H - 6, W, 6);
 
-  // Convert to image
+  // Done — show image
   document.getElementById('poster-img').src = canvas.toDataURL('image/png');
   document.getElementById('poster-modal').classList.add('active');
 }
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  return wrapTextLeft(ctx, text, x, y, maxWidth, lineHeight, 99);
+}
+
+function wrapTextLeft(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
   const chars = text.split('');
-  let line = '', lineY = y;
+  let line = '', lineY = y, lines = 0;
   for (let i = 0; i < chars.length; i++) {
     const test = line + chars[i];
     if (ctx.measureText(test).width > maxWidth && line) {
       ctx.fillText(line, x, lineY);
       line = chars[i];
       lineY += lineHeight;
+      lines++;
+      if (lines >= maxLines) { ctx.fillText(line + '...', x, lineY); return lineY + lineHeight; }
     } else {
       line = test;
     }
   }
-  if (line) ctx.fillText(line, x, lineY);
+  if (line) { ctx.fillText(line, x, lineY); lineY += lineHeight; }
+  return lineY;
 }
 
 function escHtml(str) {
