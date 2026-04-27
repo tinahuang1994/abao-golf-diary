@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="高尔夫日记">
+<meta name="theme-color" content="#2D6A4F">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<title>阿宝的高尔夫日记</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green-deep: #2D6A4F;
+  --green-light: #F0F7F4;
+  --green-mid: #D4EDE3;
+  --gold: #C8972A;
+  --gold-light: #FDF3DC;
+  --cream: #FFFDF7;
+  --text-dark: #1A1A1A;
+  --text-mid: #555550;
+  --text-light: #999990;
+  --border: #E0DDD5;
+  --red-soft: #E8534A;
+  --white: #FFFFFF;
+}
+
+html, body {
+  height: 100%;
+  font-family: "PingFang SC", "Helvetica Neue", sans-serif;
+  font-size: 20px;
+  line-height: 1.5;
+  color: var(--text-dark);
+  background: var(--green-light);
+  -webkit-font-smoothing: antialiased;
+}
+
+.view { display: none; flex-direction: column; min-height: 100vh; }
+.view.active { display: flex; }
+
+.header {
+  background: var(--green-deep);
+  color: var(--white);
+  padding: 16px 20px;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-title { font-size: 22px; font-weight: 600; flex: 1; }
+.header-back {
+  font-size: 22px;
+  color: var(--white);
+  background: none;
+  border: none;
+  padding: 8px 4px;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.scroll-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 16px calc(32px + env(safe-area-inset-bottom));
+}
+
+.year-card {
+  background: var(--green-deep);
+  color: var(--white);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.year-card-title { font-size: 18px; opacity: 0.75; margin-bottom: 12px; }
+.year-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.year-stat-value { font-size: 36px; font-weight: 700; line-height: 1; }
+.year-stat-label { font-size: 18px; opacity: 0.75; margin-top: 4px; }
+.year-best { color: var(--gold); }
+.year-progress { grid-column: 1 / -1; font-size: 20px; margin-top: 8px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.2); }
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  background: var(--green-deep);
+  color: var(--white);
+  border: none;
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0 20px;
+  height: 64px;
+  cursor: pointer;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s;
+}
+.btn-primary:active { opacity: 0.8; }
+.btn-primary.secondary {
+  background: var(--white);
+  color: var(--green-deep);
+  border: 2px solid var(--green-deep);
+}
+.btn-primary.ghost {
+  background: transparent;
+  color: var(--text-mid);
+  border: none;
+  font-size: 20px;
+  font-weight: 400;
+  height: 56px;
+}
+
+.rounds-label { font-size: 18px; color: var(--text-light); margin: 16px 0 10px; }
+.round-card {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s;
+}
+.round-card:active { background: var(--green-light); }
+.round-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.round-course { font-size: 22px; font-weight: 600; }
+.round-date { font-size: 18px; color: var(--text-light); margin-top: 2px; }
+.round-score-block { text-align: right; }
+.round-score { font-size: 48px; font-weight: 700; line-height: 1; color: var(--text-dark); }
+.round-relative { font-size: 20px; color: var(--text-mid); }
+.round-icons { display: flex; gap: 16px; margin-bottom: 10px; flex-wrap: wrap; }
+.score-icon { display: flex; align-items: center; gap: 5px; font-size: 20px; font-weight: 600; }
+.score-icon.birdie { color: var(--gold); }
+.score-icon.par { color: var(--green-deep); }
+.score-icon.bogey { color: var(--red-soft); }
+.score-icon.dbl { color: var(--red-soft); font-weight: 700; }
+.round-notes { font-size: 20px; color: var(--text-mid); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); font-size: 20px; line-height: 1.8; }
+
+.step { display: none; }
+.step.active { display: block; }
+.step-label { font-size: 18px; color: var(--text-light); margin-bottom: 20px; }
+
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 16px;
+  padding: 48px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--white);
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 16px;
+}
+.upload-zone:active, .upload-zone.dragover { border-color: var(--green-deep); background: var(--green-light); }
+.upload-icon { font-size: 52px; margin-bottom: 12px; }
+.upload-text { font-size: 22px; font-weight: 600; color: var(--green-deep); margin-bottom: 6px; }
+.upload-sub { font-size: 18px; color: var(--text-light); }
+#file-input { display: none; }
+
+.ocr-loading { text-align: center; padding: 40px; }
+.spinner { width: 48px; height: 48px; border: 4px solid var(--green-mid); border-top-color: var(--green-deep); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 22px; color: var(--text-mid); }
+
+.confirm-section { background: var(--white); border-radius: 16px; padding: 20px; margin-bottom: 12px; }
+.confirm-section-title { font-size: 18px; color: var(--text-light); margin-bottom: 14px; }
+.field-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.field-row:last-child { border-bottom: none; }
+.field-label { font-size: 20px; color: var(--text-mid); }
+.field-value { font-size: 20px; font-weight: 600; }
+.field-input {
+  font-size: 20px; font-family: inherit; font-weight: 600;
+  border: none; text-align: right; background: transparent;
+  color: var(--text-dark); width: 140px;
+  padding: 4px 0;
+}
+.field-input:focus { outline: none; border-bottom: 2px solid var(--green-deep); }
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.stat-box { background: var(--green-light); border-radius: 12px; padding: 14px; text-align: center; }
+.stat-box-value { font-size: 32px; font-weight: 700; }
+.stat-box-label { font-size: 18px; color: var(--text-mid); margin-top: 2px; }
+.stat-box.birdie .stat-box-value { color: var(--gold); }
+.stat-box.par .stat-box-value { color: var(--green-deep); }
+.stat-box.bogey .stat-box-value { color: var(--red-soft); }
+.stat-box.dbl .stat-box-value { color: var(--red-soft); }
+.companions-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.companion-tag {
+  background: var(--green-light);
+  color: var(--green-deep);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 20px;
+}
+
+.notes-field-wrap { margin-bottom: 28px; }
+.notes-label { font-size: 22px; font-weight: 600; margin-bottom: 12px; }
+.notes-textarea {
+  width: 100%;
+  min-height: 120px;
+  font-size: 20px;
+  font-family: inherit;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  background: var(--white);
+  color: var(--text-dark);
+  resize: none;
+  line-height: 1.6;
+}
+.notes-textarea:focus { outline: none; border-color: var(--green-deep); }
+.mic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--green-light);
+  border: 2px solid var(--green-mid);
+  font-size: 32px;
+  cursor: pointer;
+  margin: 12px auto 0;
+  transition: background 0.2s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mic-btn:active { transform: scale(0.93); }
+.mic-btn.listening { background: #FFE5E3; border-color: var(--red-soft); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(232,83,74,0.3); } 50% { box-shadow: 0 0 0 12px rgba(232,83,74,0); } }
+.mic-label { text-align: center; font-size: 18px; color: var(--text-light); margin-top: 6px; }
+
+.detail-score-hero { text-align: center; padding: 28px 20px 20px; background: var(--white); margin-bottom: 12px; }
+.detail-score-num { font-size: 72px; font-weight: 700; line-height: 1; color: var(--text-dark); }
+.detail-relative { font-size: 24px; color: var(--text-mid); margin-top: 4px; }
+.detail-course { font-size: 22px; color: var(--text-mid); margin-top: 8px; }
+.detail-date { font-size: 20px; color: var(--text-light); margin-top: 4px; }
+.detail-halves { display: flex; gap: 12px; margin-top: 16px; }
+.detail-half { flex: 1; background: var(--green-light); border-radius: 12px; padding: 14px; text-align: center; }
+.detail-half-val { font-size: 28px; font-weight: 700; }
+.detail-half-label { font-size: 18px; color: var(--text-mid); margin-top: 2px; }
+.detail-section { background: var(--white); border-radius: 16px; padding: 20px; margin-bottom: 12px; }
+.detail-section-title { font-size: 18px; color: var(--text-light); margin-bottom: 14px; }
+.detail-text { font-size: 20px; line-height: 1.7; color: var(--text-dark); }
+.detail-text.empty { color: var(--text-light); font-style: italic; }
+.btn-delete {
+  display: block; width: 100%;
+  background: none; border: 2px solid #FFCDD2;
+  color: var(--red-soft); border-radius: 14px;
+  font-size: 20px; font-family: inherit;
+  padding: 16px; cursor: pointer;
+  margin-top: 8px;
+}
+
+.setup-wrap { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 32px 24px; }
+.setup-emoji { font-size: 64px; text-align: center; margin-bottom: 16px; }
+.setup-title { font-size: 28px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+.setup-sub { font-size: 20px; color: var(--text-mid); text-align: center; margin-bottom: 40px; }
+.setup-label { font-size: 22px; font-weight: 600; margin-bottom: 10px; }
+.setup-input {
+  width: 100%; font-size: 24px; font-family: inherit;
+  border: 2px solid var(--border); border-radius: 12px;
+  padding: 16px; background: var(--white);
+  color: var(--text-dark); margin-bottom: 24px;
+}
+.setup-input:focus { outline: none; border-color: var(--green-deep); }
+
+/* ── CONFETTI ── */
+.confetti-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 999; overflow: hidden; }
+.confetti-piece { position: absolute; top: -20px; opacity: 1; animation: confetti-fall linear forwards; }
+@keyframes confetti-fall { 0% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(110vh) rotate(720deg); opacity: 0; } }
+
+/* ── SHARE BUTTON ── */
+.btn-share {
+  display: block; width: 100%;
+  background: var(--gold); color: var(--white);
+  border: none; border-radius: 14px;
+  font-size: 22px; font-weight: 600; font-family: inherit;
+  height: 64px; cursor: pointer; text-align: center;
+  margin-bottom: 12px;
+}
+
+/* ── POSTER MODAL ── */
+.poster-modal {
+  display: none; position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.92); z-index: 200;
+  flex-direction: column; align-items: center;
+  justify-content: flex-start; padding: 20px;
+  overflow-y: auto;
+}
+.poster-modal.active { display: flex; }
+#poster-canvas { display: none; }
+.poster-img { width: 100%; max-width: 360px; border-radius: 16px; display: block; margin: 0 auto; }
+.poster-hint { color: rgba(255,255,255,0.55); font-size: 18px; text-align: center; margin: 14px 0 20px; }
+.btn-poster-close {
+  background: rgba(255,255,255,0.12); color: #fff;
+  border: none; border-radius: 12px; font-size: 20px;
+  font-family: inherit; padding: 14px 48px; cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SETUP VIEW ═══ -->
+<div class="view" id="view-setup">
+  <div class="setup-wrap">
+    <div class="setup-emoji">⛳️</div>
+    <h1 class="setup-title">欢迎，阿宝 ⛳️</h1>
+    <p class="setup-sub">你在高球玩伴里用的是什么名字？（用来识别截图）</p>
+    <form id="setup-form">
+      <label class="setup-label" for="setup-name">你的名字</label>
+      <input class="setup-input" id="setup-name" type="text" placeholder="宝" maxlength="10" autocomplete="off">
+      <button class="btn-primary" type="submit">开始记录 →</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ HOME VIEW ═══ -->
+<div class="view" id="view-home">
+  <div class="header">
+    <span class="header-title">⛳️ 阿宝的高尔夫日记</span>
+  </div>
+  <div class="scroll-body">
+
+    <!-- Year stats -->
+    <div class="year-card" id="year-card">
+      <div class="year-card-title">今年成绩</div>
+      <div class="year-stats-grid">
+        <div class="year-stat">
+          <div class="year-stat-value" id="stat-count">--</div>
+          <div class="year-stat-label">打了几场</div>
+        </div>
+        <div class="year-stat">
+          <div class="year-stat-value" id="stat-avg">--</div>
+          <div class="year-stat-label">平均杆数</div>
+        </div>
+        <div class="year-stat">
+          <div class="year-stat-value year-best" id="stat-best">--</div>
+          <div class="year-stat-label">最好成绩</div>
+        </div>
+        <div class="year-stat">
+          <div class="year-stat-value year-best" id="stat-birds">--</div>
+          <div class="year-stat-label">🐦 小鸟总数</div>
+        </div>
+      </div>
+      <div class="year-progress" id="stat-progress"></div>
+    </div>
+
+    <!-- Add button -->
+    <button class="btn-primary" id="btn-add" style="margin-bottom:20px">＋ 记录这场球</button>
+
+    <!-- Rounds list -->
+    <div class="rounds-label">打球记录</div>
+    <div id="rounds-list"></div>
+    <div id="rounds-empty" class="empty-state" style="display:none">
+      还没有记录哦<br>打完球来记一下吧 ⛳️
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ ADD ROUND VIEW ═══ -->
+<div class="view" id="view-add">
+  <div class="header">
+    <button class="header-back" data-back="home">‹</button>
+    <span class="header-title">记录这场球</span>
+  </div>
+  <div class="scroll-body">
+
+    <!-- Step 1: Upload -->
+    <div class="step" id="step-upload">
+      <p class="step-label">上传高球玩伴记分卡截图，自动识别数据</p>
+      <div class="upload-zone" id="upload-zone">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">上传截图</div>
+        <div class="upload-sub">点击选择图片</div>
+      </div>
+      <input type="file" id="file-input" accept="image/*">
+      <button class="btn-primary ghost" id="btn-manual">手动输入</button>
+    </div>
+
+    <!-- Step 2: Loading -->
+    <div class="step" id="step-loading">
+      <div class="ocr-loading">
+        <div class="spinner"></div>
+        <div class="loading-text">正在识别截图...</div>
+      </div>
+    </div>
+
+    <!-- Step 3: Confirm data -->
+    <div class="step" id="step-confirm">
+      <p class="step-label">确认一下数据，可以修改</p>
+
+      <div class="confirm-section">
+        <div class="confirm-section-title">基本信息</div>
+        <div class="field-row">
+          <span class="field-label">球场</span>
+          <input class="field-input" id="cf-course" type="text" placeholder="球场名称">
+        </div>
+        <div class="field-row">
+          <span class="field-label">日期</span>
+          <input class="field-input" id="cf-date" type="date">
+        </div>
+        <div class="field-row">
+          <span class="field-label">总杆数</span>
+          <input class="field-input" id="cf-score" type="number" placeholder="85" min="50" max="200" inputmode="numeric">
+        </div>
+        <div class="field-row">
+          <span class="field-label">标准杆</span>
+          <input class="field-input" id="cf-par" type="number" placeholder="72" min="60" max="80" inputmode="numeric">
+        </div>
+        <div class="field-row">
+          <span class="field-label">前九洞</span>
+          <input class="field-input" id="cf-front" type="number" placeholder="--" inputmode="numeric">
+        </div>
+        <div class="field-row">
+          <span class="field-label">后九洞</span>
+          <input class="field-input" id="cf-back" type="number" placeholder="--" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="confirm-section">
+        <div class="confirm-section-title">成绩分布（由截图计算）</div>
+        <div class="stat-grid">
+          <div class="stat-box birdie">
+            <div class="stat-box-value" id="cs-birdies">--</div>
+            <div class="stat-box-label">🐦 小鸟</div>
+          </div>
+          <div class="stat-box par">
+            <div class="stat-box-value" id="cs-pars">--</div>
+            <div class="stat-box-label">◯ 帕</div>
+          </div>
+          <div class="stat-box bogey">
+            <div class="stat-box-value" id="cs-bogeys">--</div>
+            <div class="stat-box-label">+ 柏忌</div>
+          </div>
+          <div class="stat-box dbl">
+            <div class="stat-box-value" id="cs-dbl">--</div>
+            <div class="stat-box-label">++ 双柏忌+</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="confirm-section">
+        <div class="confirm-section-title">同伴</div>
+        <div class="companions-list" id="companions-list"></div>
+        <div class="field-row" style="margin-top:12px">
+          <span class="field-label">修改同伴</span>
+          <input class="field-input" id="cf-companions" type="text" placeholder="用、分隔">
+        </div>
+      </div>
+
+      <button class="btn-primary" id="btn-confirm-next" style="margin-top:8px">下一步 →</button>
+    </div>
+
+    <!-- Step 4: Notes & improvement -->
+    <div class="step" id="step-notes">
+      <p class="step-label">说说今天的感受</p>
+
+      <div class="notes-field-wrap">
+        <div class="notes-label">今天的心得</div>
+        <textarea class="notes-textarea" id="ta-notes" placeholder="今天有什么收获？比如握杆、挥杆、心态..."></textarea>
+        <button class="mic-btn" id="mic-notes" type="button">🎙️</button>
+        <div class="mic-label" id="mic-notes-label">点击说话</div>
+      </div>
+
+      <div class="notes-field-wrap">
+        <div class="notes-label">下次要改进</div>
+        <textarea class="notes-textarea" id="ta-improve" placeholder="这次哪里还不够好？下次重点练什么？"></textarea>
+        <button class="mic-btn" id="mic-improve" type="button">🎙️</button>
+        <div class="mic-label" id="mic-improve-label">点击说话</div>
+      </div>
+
+      <button class="btn-primary" id="btn-save">保存这场球 ✓</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ DETAIL VIEW ═══ -->
+<div class="view" id="view-detail">
+  <div class="header">
+    <button class="header-back" data-back="home">‹</button>
+    <span class="header-title" id="det-course">球场详情</span>
+  </div>
+  <div class="scroll-body">
+
+    <div class="detail-score-hero">
+      <div class="detail-score-num" id="det-score">--</div>
+      <div class="detail-relative" id="det-relative"></div>
+      <div class="detail-course" id="det-course-sub"></div>
+      <div class="detail-date" id="det-date"></div>
+      <div class="detail-halves" id="det-halves">
+        <div class="detail-half">
+          <div class="detail-half-val" id="det-front">--</div>
+          <div class="detail-half-label">前九洞</div>
+        </div>
+        <div class="detail-half">
+          <div class="detail-half-val" id="det-back">--</div>
+          <div class="detail-half-label">后九洞</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">成绩分布</div>
+      <div class="stat-grid">
+        <div class="stat-box birdie">
+          <div class="stat-box-value" id="det-birdies">--</div>
+          <div class="stat-box-label">🐦 小鸟</div>
+        </div>
+        <div class="stat-box par">
+          <div class="stat-box-value" id="det-pars">--</div>
+          <div class="stat-box-label">◯ 帕</div>
+        </div>
+        <div class="stat-box bogey">
+          <div class="stat-box-value" id="det-bogeys">--</div>
+          <div class="stat-box-label">+ 柏忌</div>
+        </div>
+        <div class="stat-box dbl">
+          <div class="stat-box-value" id="det-dbl">--</div>
+          <div class="stat-box-label">++ 双柏忌+</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">同伴</div>
+      <div class="companions-list" id="det-companions"></div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">今天的心得</div>
+      <div class="detail-text" id="det-notes"></div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">下次要改进</div>
+      <div class="detail-text" id="det-improve"></div>
+    </div>
+
+    <button class="btn-share" id="btn-share">分享海报 ✨</button>
+    <button class="btn-delete" id="btn-delete">删除这条记录</button>
+
+  </div>
+</div>
+
+<!-- ═══ POSTER MODAL ═══ -->
+<div class="poster-modal" id="poster-modal">
+  <canvas id="poster-canvas" width="750" height="1200"></canvas>
+  <img id="poster-img" class="poster-img" alt="海报">
+  <p class="poster-hint">长按图片 → 存储到相册，然后发朋友圈</p>
+  <button class="btn-poster-close" id="btn-close-poster">关闭</button>
+</div>
+
+<script src="config.js"></script>
+<script>
+// ── STORAGE ──
+const SETTINGS_KEY = 'abao_settings';
+const ROUNDS_KEY = 'abao_rounds';
+
+function getSettings() {
+  try { return JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}; } catch { return {}; }
+}
+function saveSettings(settings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+function getRounds() {
+  try { return JSON.parse(localStorage.getItem(ROUNDS_KEY)) || []; } catch { return []; }
+}
+function saveRound(round) {
+  const rounds = getRounds();
+  round.id = 'r_' + Date.now();
+  round.createdAt = new Date().toISOString();
+  rounds.unshift(round);
+  localStorage.setItem(ROUNDS_KEY, JSON.stringify(rounds));
+  return round;
+}
+function getRoundById(id) {
+  return getRounds().find(r => r.id === id) || null;
+}
+function deleteRound(id) {
+  const rounds = getRounds().filter(r => r.id !== id);
+  localStorage.setItem(ROUNDS_KEY, JSON.stringify(rounds));
+}
+
+// ── STATS ──
+function getYearStats(rounds) {
+  const year = new Date().getFullYear();
+  const thisYear = rounds.filter(r => r.date && r.date.startsWith(String(year)));
+  if (thisYear.length === 0) return null;
+  const scores = thisYear.map(r => r.totalScore).filter(Boolean);
+  const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
+  const best = scores.length ? Math.min(...scores) : null;
+  const birdies = thisYear.reduce((sum, r) => sum + (r.birdies || 0), 0);
+  const sorted = [...thisYear].sort((a, b) => a.date.localeCompare(b.date));
+  const firstScore = sorted[0]?.totalScore;
+  const improvement = firstScore && best ? firstScore - best : null;
+  return { count: thisYear.length, avg, best, birdies, improvement };
+}
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+// ── OCR ──
+async function parseScreenshot(file, playerName) {
+  const base64 = await fileToBase64(file);
+  const url = window.SCF_URL || '';
+  if (!url) throw new Error('SCF_URL not configured');
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageBase64: base64, playerName })
+  });
+  if (!res.ok) throw new Error('识别服务出错，请手动输入');
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return processOcrResult(data);
+}
+function processOcrResult(data) {
+  const holes = Array.isArray(data.holeScores) ? data.holeScores : [];
+  const birdies = holes.filter(s => s === -1).length;
+  const eagles = holes.filter(s => s <= -2).length;
+  const pars = holes.filter(s => s === 0).length;
+  const bogeys = holes.filter(s => s === 1).length;
+  const doublePlusBogeys = holes.filter(s => s >= 2).length;
+  const parTotal = data.parTotal || 72;
+  const totalScore = data.totalScore;
+  const relativeScore = totalScore != null ? totalScore - parTotal : null;
+  return {
+    date: data.date || null,
+    course: data.course || '',
+    parTotal,
+    totalScore: totalScore || null,
+    relativeScore,
+    frontNine: data.frontNine || null,
+    backNine: data.backNine || null,
+    birdies: birdies + eagles,
+    pars,
+    bogeys,
+    doublePlusBogeys,
+    companions: Array.isArray(data.companions) ? data.companions : [],
+    parsedFromScreenshot: true
+  };
+}
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ── SPEECH ──
+function createSpeechInput(micBtn, textarea, labelEl) {
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRec) {
+    micBtn.style.display = 'none';
+    if (labelEl) labelEl.style.display = 'none';
+    return;
+  }
+  let rec = null;
+  let listening = false;
+  micBtn.addEventListener('click', () => {
+    if (listening) { rec && rec.stop(); return; }
+    rec = new SpeechRec();
+    rec.lang = 'zh-CN';
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onstart = () => {
+      listening = true;
+      micBtn.classList.add('listening');
+      micBtn.textContent = '🔴';
+      if (labelEl) labelEl.textContent = '说完了就点我';
+    };
+    rec.onresult = e => {
+      const text = e.results[0][0].transcript;
+      textarea.value = (textarea.value ? textarea.value + ' ' : '') + text;
+    };
+    rec.onerror = () => reset();
+    rec.onend = () => reset();
+    rec.start();
+  });
+  function reset() {
+    listening = false;
+    micBtn.classList.remove('listening');
+    micBtn.textContent = '🎙️';
+    if (labelEl) labelEl.textContent = '点击说话';
+  }
+}
+
+// ── APP ──
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('active'); window.scrollTo(0, 0); }
+}
+
+function initSetup() {
+  const form = document.getElementById('setup-form');
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('setup-name').value.trim() || '宝';
+    saveSettings({ playerName: name, setupComplete: true });
+    initHome();
+    showView('view-home');
+  });
+}
+
+function initHome() {
+  const rounds = getRounds();
+  const stats = getYearStats(rounds);
+  const yearCard = document.getElementById('year-card');
+  if (stats && stats.count > 0) {
+    yearCard.style.display = '';
+    document.getElementById('stat-count').textContent = stats.count;
+    document.getElementById('stat-avg').textContent = stats.avg ?? '--';
+    document.getElementById('stat-best').textContent = stats.best ?? '--';
+    document.getElementById('stat-birds').textContent = stats.birdies;
+    const progEl = document.getElementById('stat-progress');
+    if (stats.improvement && stats.improvement > 0) {
+      progEl.textContent = `🎉 今年进步了 ${stats.improvement} 杆！加油阿宝！`;
+    } else {
+      progEl.textContent = '继续加油，每一场都是进步！';
+    }
+  } else {
+    yearCard.style.display = 'none';
+  }
+  const list = document.getElementById('rounds-list');
+  const empty = document.getElementById('rounds-empty');
+  if (rounds.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = '';
+  } else {
+    empty.style.display = 'none';
+    list.innerHTML = rounds.map(r => roundCardHTML(r)).join('');
+    list.querySelectorAll('.round-card').forEach(card => {
+      card.addEventListener('click', () => showDetail(card.dataset.id));
+    });
+  }
+}
+
+function roundCardHTML(r) {
+  const icons = [];
+  if (r.birdies > 0) icons.push(`<span class="score-icon birdie">🐦 ×${r.birdies}</span>`);
+  if (r.pars > 0) icons.push(`<span class="score-icon par">◯ ×${r.pars}</span>`);
+  if (r.bogeys > 0) icons.push(`<span class="score-icon bogey">+ ×${r.bogeys}</span>`);
+  if (r.doublePlusBogeys > 0) icons.push(`<span class="score-icon dbl">++ ×${r.doublePlusBogeys}</span>`);
+  const rel = r.relativeScore != null ? (r.relativeScore > 0 ? '+' + r.relativeScore : r.relativeScore) : '';
+  const notesText = r.notes ? r.notes : '<span style="color:var(--text-light);font-style:italic">暂无心得</span>';
+  return `
+    <div class="round-card" data-id="${r.id}">
+      <div class="round-card-top">
+        <div>
+          <div class="round-course">${escHtml(r.course || '未知球场')}</div>
+          <div class="round-date">${formatDate(r.date)}</div>
+        </div>
+        <div class="round-score-block">
+          <div class="round-score">${r.totalScore ?? '--'}</div>
+          <div class="round-relative">${rel ? rel + ' 超标准杆' : ''}</div>
+        </div>
+      </div>
+      ${icons.length ? `<div class="round-icons">${icons.join('')}</div>` : ''}
+      <div class="round-notes">${notesText}</div>
+    </div>`;
+}
+
+let draftRound = {};
+
+function initAddRound() {
+  draftRound = {};
+  showStep('step-upload');
+  const zone = document.getElementById('upload-zone');
+  const fileInput = document.getElementById('file-input');
+  zone.onclick = () => fileInput.click();
+  fileInput.onchange = e => {
+    const file = e.target.files[0];
+    if (file) handleScreenshot(file);
+    fileInput.value = '';
+  };
+  document.getElementById('btn-manual').onclick = () => {
+    draftRound = { parsedFromScreenshot: false };
+    populateConfirmForm(null);
+    showStep('step-confirm');
+  };
+  document.getElementById('btn-confirm-next').onclick = () => {
+    readConfirmForm();
+    initNotesStep();
+    showStep('step-notes');
+  };
+  createSpeechInput(
+    document.getElementById('mic-notes'),
+    document.getElementById('ta-notes'),
+    document.getElementById('mic-notes-label')
+  );
+  createSpeechInput(
+    document.getElementById('mic-improve'),
+    document.getElementById('ta-improve'),
+    document.getElementById('mic-improve-label')
+  );
+  document.getElementById('btn-save').onclick = saveAndReturn;
+}
+
+async function handleScreenshot(file) {
+  showStep('step-loading');
+  const settings = getSettings();
+  const playerName = settings.playerName || '宝';
+  try {
+    const result = await parseScreenshot(file, playerName);
+    Object.assign(draftRound, result);
+    populateConfirmForm(result);
+    showStep('step-confirm');
+  } catch (err) {
+    // Show whatever partial data we have; only alert if truly nothing
+    const hasPartial = draftRound.totalScore || draftRound.course;
+    if (!hasPartial) {
+      alert('截图识别失败：' + err.message + '\n\n请手动输入数据。');
+      populateConfirmForm(null);
+    } else {
+      populateConfirmForm(draftRound);
+    }
+    showStep('step-confirm');
+  }
+}
+
+function populateConfirmForm(data) {
+  document.getElementById('cf-course').value = data?.course || '';
+  document.getElementById('cf-date').value = data?.date || today();
+  document.getElementById('cf-score').value = data?.totalScore || '';
+  document.getElementById('cf-par').value = data?.parTotal || 72;
+  document.getElementById('cs-birdies').textContent = data?.birdies ?? '--';
+  document.getElementById('cs-pars').textContent = data?.pars ?? '--';
+  document.getElementById('cs-bogeys').textContent = data?.bogeys ?? '--';
+  document.getElementById('cs-dbl').textContent = data?.doublePlusBogeys ?? '--';
+  document.getElementById('cf-front').value = data?.frontNine || '';
+  document.getElementById('cf-back').value = data?.backNine || '';
+  const comps = data?.companions || [];
+  document.getElementById('companions-list').innerHTML =
+    comps.length ? comps.map(c => `<span class="companion-tag">${escHtml(c)}</span>`).join('') : '<span style="color:var(--text-light)">无同伴数据</span>';
+  document.getElementById('cf-companions').value = comps.join('、');
+}
+
+function readConfirmForm() {
+  const score = parseInt(document.getElementById('cf-score').value) || null;
+  const par = parseInt(document.getElementById('cf-par').value) || 72;
+  draftRound.course = document.getElementById('cf-course').value.trim();
+  draftRound.date = document.getElementById('cf-date').value;
+  draftRound.totalScore = score;
+  draftRound.parTotal = par;
+  draftRound.relativeScore = score != null ? score - par : null;
+  draftRound.frontNine = parseInt(document.getElementById('cf-front').value) || null;
+  draftRound.backNine = parseInt(document.getElementById('cf-back').value) || null;
+  const compStr = document.getElementById('cf-companions').value;
+  draftRound.companions = compStr ? compStr.split(/[、,，\s]+/).filter(Boolean) : [];
+}
+
+function initNotesStep() {
+  document.getElementById('ta-notes').value = '';
+  document.getElementById('ta-improve').value = '';
+}
+
+function saveAndReturn() {
+  draftRound.notes = document.getElementById('ta-notes').value.trim();
+  draftRound.improvement = document.getElementById('ta-improve').value.trim();
+  saveRound(draftRound);
+  initHome();
+  showView('view-home');
+  showConfetti();
+}
+
+function showConfetti() {
+  const container = document.createElement('div');
+  container.className = 'confetti-container';
+  document.body.appendChild(container);
+  const colors = ['#C8972A', '#2D6A4F', '#E8534A', '#74C69D', '#FFD166', '#FF6B9D', '#A8E6CF', '#FFBE0B'];
+  for (let i = 0; i < 70; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    const size = 8 + Math.random() * 10;
+    p.style.cssText = `
+      left:${Math.random() * 100}%;
+      width:${size}px; height:${size}px;
+      background:${colors[Math.floor(Math.random() * colors.length)]};
+      border-radius:${Math.random() > 0.4 ? '50%' : '2px'};
+      animation-duration:${1.8 + Math.random() * 2}s;
+      animation-delay:${Math.random() * 0.8}s;
+    `;
+    container.appendChild(p);
+  }
+  setTimeout(() => container.remove(), 4500);
+}
+
+function showStep(id) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showDetail(id) {
+  const r = getRoundById(id);
+  if (!r) return;
+  const rel = r.relativeScore != null
+    ? (r.relativeScore === 0 ? 'E（平标准杆）' : (r.relativeScore > 0 ? '+' : '') + r.relativeScore + ' 超标准杆')
+    : '';
+  document.getElementById('det-course').textContent = r.course || '未知球场';
+  document.getElementById('det-date').textContent = formatDate(r.date);
+  document.getElementById('det-score').textContent = r.totalScore ?? '--';
+  document.getElementById('det-relative').textContent = rel;
+  const halvesEl = document.getElementById('det-halves');
+  if (r.frontNine || r.backNine) {
+    halvesEl.style.display = 'flex';
+    document.getElementById('det-front').textContent = r.frontNine ?? '--';
+    document.getElementById('det-back').textContent = r.backNine ?? '--';
+  } else {
+    halvesEl.style.display = 'none';
+  }
+  document.getElementById('det-birdies').textContent = r.birdies ?? '--';
+  document.getElementById('det-pars').textContent = r.pars ?? '--';
+  document.getElementById('det-bogeys').textContent = r.bogeys ?? '--';
+  document.getElementById('det-dbl').textContent = r.doublePlusBogeys ?? '--';
+  const compEl = document.getElementById('det-companions');
+  compEl.innerHTML = r.companions?.length
+    ? r.companions.map(c => `<span class="companion-tag">${escHtml(c)}</span>`).join('')
+    : '<span class="detail-text empty">无记录</span>';
+  document.getElementById('det-notes').textContent = r.notes || '暂无心得';
+  document.getElementById('det-notes').className = 'detail-text' + (r.notes ? '' : ' empty');
+  document.getElementById('det-improve').textContent = r.improvement || '暂无记录';
+  document.getElementById('det-improve').className = 'detail-text' + (r.improvement ? '' : ' empty');
+  document.getElementById('btn-delete').onclick = () => {
+    if (confirm('确定删除这条记录吗？')) {
+      deleteRound(id);
+      initHome();
+      showView('view-home');
+    }
+  };
+  document.getElementById('btn-share').onclick = () => generatePoster(r);
+  showView('view-detail');
+}
+
+// ── POSTER ──
+function generatePoster(r) {
+  const canvas = document.getElementById('poster-canvas');
+  const ctx = canvas.getContext('2d');
+  const W = 750, H = 1200;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#1B4D35');
+  bg.addColorStop(1, '#0D2619');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Decorative circles
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.beginPath(); ctx.arc(660, 160, 220, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(80, 980, 180, 0, Math.PI * 2); ctx.fill();
+
+  // Gold accent bar top
+  ctx.fillStyle = '#C8972A';
+  ctx.fillRect(0, 0, W, 8);
+
+  // Brand
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '28px "PingFang SC", "Helvetica Neue", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('⛳ 阿宝的高尔夫日记', W / 2, 70);
+
+  // Course name
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = 'bold 54px "PingFang SC", "Helvetica Neue", sans-serif';
+  ctx.fillText(r.course || '未知球场', W / 2, 160);
+
+  // Date
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.font = '30px "PingFang SC", "Helvetica Neue", sans-serif';
+  ctx.fillText(formatDate(r.date), W / 2, 210);
+
+  // Divider
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(60, 248); ctx.lineTo(690, 248); ctx.stroke();
+
+  // BIG score
+  ctx.fillStyle = '#C8972A';
+  ctx.font = 'bold 180px "PingFang SC", "Helvetica Neue", sans-serif';
+  ctx.fillText(r.totalScore ?? '--', W / 2, 460);
+
+  // Relative label
+  const rel = r.relativeScore != null
+    ? (r.relativeScore === 0 ? 'E 平标准杆'
+      : (r.relativeScore > 0 ? '+' + r.relativeScore : r.relativeScore) + ' 超标准杆')
+    : '';
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.font = '34px "PingFang SC", "Helvetica Neue", sans-serif';
+  ctx.fillText(rel, W / 2, 520);
+
+  // Divider
+  ctx.beginPath(); ctx.moveTo(60, 560); ctx.lineTo(690, 560); ctx.stroke();
+
+  // Stats row
+  const stats = [
+    { icon: '🐦', count: r.birdies ?? 0, label: '小鸟', color: '#C8972A' },
+    { icon: '◯', count: r.pars ?? 0, label: '帕', color: '#74C69D' },
+    { icon: '+', count: r.bogeys ?? 0, label: '柏忌', color: '#FF8FA3' },
+    { icon: '++', count: r.doublePlusBogeys ?? 0, label: '双柏忌', color: '#FF4D6D' },
+  ];
+  stats.forEach((s, i) => {
+    const x = 93 + i * 188;
+    ctx.fillStyle = s.color;
+    ctx.font = '42px "PingFang SC", "Helvetica Neue", sans-serif';
+    ctx.fillText(s.icon, x, 630);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 56px "PingFang SC", "Helvetica Neue", sans-serif';
+    ctx.fillText(String(s.count), x, 700);
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = '24px "PingFang SC", "Helvetica Neue", sans-serif';
+    ctx.fillText(s.label, x, 735);
+  });
+
+  // Divider
+  ctx.beginPath(); ctx.moveTo(60, 772); ctx.lineTo(690, 772); ctx.stroke();
+
+  // Notes quote
+  if (r.notes) {
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '28px "PingFang SC", "Helvetica Neue", sans-serif';
+    const snippet = r.notes.length > 50 ? r.notes.substring(0, 50) + '...' : r.notes;
+    wrapText(ctx, '\u201C' + snippet + '\u201D', W / 2, 830, 620, 42);
+  }
+
+  // Bottom golf emoji
+  ctx.font = '90px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillText('⛳', W / 2, 1080);
+
+  // Gold bar bottom
+  ctx.fillStyle = '#C8972A';
+  ctx.fillRect(0, H - 8, W, 8);
+
+  // Convert to image
+  document.getElementById('poster-img').src = canvas.toDataURL('image/png');
+  document.getElementById('poster-modal').classList.add('active');
+}
+
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const chars = text.split('');
+  let line = '', lineY = y;
+  for (let i = 0; i < chars.length; i++) {
+    const test = line + chars[i];
+    if (ctx.measureText(test).width > maxWidth && line) {
+      ctx.fillText(line, x, lineY);
+      line = chars[i];
+      lineY += lineHeight;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, lineY);
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// ── BOOT ──
+document.addEventListener('DOMContentLoaded', () => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+  const settings = getSettings();
+  document.querySelectorAll('[data-back]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.back;
+      if (target === 'home') { initHome(); showView('view-home'); }
+      else showView(target);
+    });
+  });
+  document.getElementById('btn-close-poster').addEventListener('click', () => {
+    document.getElementById('poster-modal').classList.remove('active');
+  });
+
+  document.getElementById('btn-add').addEventListener('click', () => {
+    initAddRound();
+    showView('view-add');
+  });
+  if (!settings.setupComplete) {
+    initSetup();
+    showView('view-setup');
+  } else {
+    initHome();
+    showView('view-home');
+  }
+});
+</script>
+</body>
+</html>
