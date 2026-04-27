@@ -199,6 +199,23 @@ html, body {
   border-radius: 20px;
   padding: 6px 14px;
   font-size: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tag-del { font-size: 20px; opacity: 0.5; cursor: pointer; line-height: 1; }
+.companions-tags { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; min-height: 10px; }
+.companion-add-row { display: flex; gap: 10px; }
+.companion-input {
+  flex: 1; font-size: 20px; font-family: inherit;
+  border: 2px solid var(--border); border-radius: 10px;
+  padding: 12px 14px; background: var(--white); color: var(--text-dark);
+}
+.companion-input:focus { outline: none; border-color: var(--green-deep); }
+.btn-companion-add {
+  background: var(--green-deep); color: var(--white);
+  border: none; border-radius: 10px; font-size: 20px;
+  font-family: inherit; padding: 12px 20px; cursor: pointer; white-space: nowrap;
 }
 
 .notes-field-wrap { margin-bottom: 28px; }
@@ -411,28 +428,33 @@ html, body {
       <div class="confirm-section">
         <div class="confirm-section-title">成绩分布</div>
         <div class="field-row">
-          <span class="field-label">🐦 小鸟</span>
+          <span class="field-label">🦅 老鹰 Eagle</span>
+          <input class="field-input" id="cf-eagles" type="number" placeholder="0" min="0" inputmode="numeric">
+        </div>
+        <div class="field-row">
+          <span class="field-label">🐦 小鸟 Birdie</span>
           <input class="field-input" id="cf-birdies" type="number" placeholder="0" min="0" inputmode="numeric">
         </div>
         <div class="field-row">
-          <span class="field-label">◯ 帕</span>
+          <span class="field-label">◯ 帕 Par</span>
           <input class="field-input" id="cf-pars" type="number" placeholder="0" min="0" inputmode="numeric">
         </div>
         <div class="field-row">
-          <span class="field-label">+ 柏忌</span>
+          <span class="field-label">＋ 柏忌 Bogey</span>
           <input class="field-input" id="cf-bogeys" type="number" placeholder="0" min="0" inputmode="numeric">
         </div>
         <div class="field-row">
-          <span class="field-label">++ 双柏忌+</span>
+          <span class="field-label">＋＋ 双柏忌+</span>
           <input class="field-input" id="cf-dbl" type="number" placeholder="0" min="0" inputmode="numeric">
         </div>
       </div>
 
       <div class="confirm-section">
         <div class="confirm-section-title">同伴</div>
-        <div class="field-row">
-          <span class="field-label">同伴姓名</span>
-          <input class="field-input" id="cf-companions" type="text" placeholder="用、分隔">
+        <div class="companions-tags" id="companions-tags"></div>
+        <div class="companion-add-row">
+          <input class="companion-input" id="cf-companion-input" type="text" placeholder="输入姓名">
+          <button class="btn-companion-add" id="btn-add-companion" type="button">添加</button>
         </div>
       </div>
 
@@ -488,6 +510,10 @@ html, body {
       <div class="detail-section-title">成绩分布</div>
       <div class="stat-grid">
         <div class="stat-box birdie">
+          <div class="stat-box-value" id="det-eagles">--</div>
+          <div class="stat-box-label">🦅 老鹰</div>
+        </div>
+        <div class="stat-box birdie">
           <div class="stat-box-value" id="det-birdies">--</div>
           <div class="stat-box-label">🐦 小鸟</div>
         </div>
@@ -497,11 +523,11 @@ html, body {
         </div>
         <div class="stat-box bogey">
           <div class="stat-box-value" id="det-bogeys">--</div>
-          <div class="stat-box-label">+ 柏忌</div>
+          <div class="stat-box-label">＋ 柏忌</div>
         </div>
         <div class="stat-box dbl">
           <div class="stat-box-value" id="det-dbl">--</div>
-          <div class="stat-box-label">++ 双柏忌+</div>
+          <div class="stat-box-label">＋＋ 双柏忌+</div>
         </div>
       </div>
     </div>
@@ -750,10 +776,11 @@ function initHome() {
 
 function roundCardHTML(r) {
   const icons = [];
+  if (r.eagles > 0) icons.push(`<span class="score-icon birdie">🦅 ×${r.eagles}</span>`);
   if (r.birdies > 0) icons.push(`<span class="score-icon birdie">🐦 ×${r.birdies}</span>`);
   if (r.pars > 0) icons.push(`<span class="score-icon par">◯ ×${r.pars}</span>`);
-  if (r.bogeys > 0) icons.push(`<span class="score-icon bogey">+ ×${r.bogeys}</span>`);
-  if (r.doublePlusBogeys > 0) icons.push(`<span class="score-icon dbl">++ ×${r.doublePlusBogeys}</span>`);
+  if (r.bogeys > 0) icons.push(`<span class="score-icon bogey">＋×${r.bogeys}</span>`);
+  if (r.doublePlusBogeys > 0) icons.push(`<span class="score-icon dbl">＋＋×${r.doublePlusBogeys}</span>`);
   const rel = r.relativeScore != null ? (r.relativeScore > 0 ? '+' + r.relativeScore : r.relativeScore) : '';
   const notesText = r.notes ? r.notes : '<span style="color:var(--text-light);font-style:italic">暂无心得</span>';
   return `
@@ -778,6 +805,7 @@ let draftRound = {};
 function initAddRound() {
   draftRound = {};
   populateConfirmForm();
+  initCompanions();
   showStep('step-confirm');
   document.getElementById('btn-confirm-next').onclick = () => {
     readConfirmForm();
@@ -787,19 +815,45 @@ function initAddRound() {
   document.getElementById('btn-save').onclick = saveAndReturn;
 }
 
+let companions = [];
+
+function initCompanions() {
+  companions = [];
+  renderCompanionTags();
+  const input = document.getElementById('cf-companion-input');
+  document.getElementById('btn-add-companion').onclick = () => {
+    const name = input.value.trim();
+    if (name) { companions.push(name); renderCompanionTags(); input.value = ''; input.focus(); }
+  };
+  input.onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btn-add-companion').click(); }
+  };
+}
+
+function renderCompanionTags() {
+  document.getElementById('companions-tags').innerHTML = companions.map((c, i) =>
+    `<span class="companion-tag">${escHtml(c)}<span class="tag-del" onclick="removeCompanion(${i})">×</span></span>`
+  ).join('');
+}
+
+function removeCompanion(i) {
+  companions.splice(i, 1);
+  renderCompanionTags();
+}
+
 function populateConfirmForm() {
   document.getElementById('cf-course').value = '';
   document.getElementById('cf-location').value = '';
   document.getElementById('cf-date').value = today();
   document.getElementById('cf-score').value = '';
   document.getElementById('cf-par').value = 72;
+  document.getElementById('cf-eagles').value = '';
   document.getElementById('cf-birdies').value = '';
   document.getElementById('cf-pars').value = '';
   document.getElementById('cf-bogeys').value = '';
   document.getElementById('cf-dbl').value = '';
   document.getElementById('cf-front').value = '';
   document.getElementById('cf-back').value = '';
-  document.getElementById('cf-companions').value = '';
 }
 
 function readConfirmForm() {
@@ -813,12 +867,12 @@ function readConfirmForm() {
   draftRound.relativeScore = score != null ? score - par : null;
   draftRound.frontNine = parseInt(document.getElementById('cf-front').value) || null;
   draftRound.backNine = parseInt(document.getElementById('cf-back').value) || null;
+  draftRound.eagles = parseInt(document.getElementById('cf-eagles').value) || 0;
   draftRound.birdies = parseInt(document.getElementById('cf-birdies').value) || 0;
   draftRound.pars = parseInt(document.getElementById('cf-pars').value) || 0;
   draftRound.bogeys = parseInt(document.getElementById('cf-bogeys').value) || 0;
   draftRound.doublePlusBogeys = parseInt(document.getElementById('cf-dbl').value) || 0;
-  const compStr = document.getElementById('cf-companions').value;
-  draftRound.companions = compStr ? compStr.split(/[、,，\s]+/).filter(Boolean) : [];
+  draftRound.companions = [...companions];
 }
 
 function initNotesStep() {
@@ -879,6 +933,7 @@ function showDetail(id) {
   } else {
     halvesEl.style.display = 'none';
   }
+  document.getElementById('det-eagles').textContent = r.eagles ?? '--';
   document.getElementById('det-birdies').textContent = r.birdies ?? '--';
   document.getElementById('det-pars').textContent = r.pars ?? '--';
   document.getElementById('det-bogeys').textContent = r.bogeys ?? '--';
@@ -989,13 +1044,14 @@ function drawPoster(canvas, r, portrait) {
   ctx.fillRect(0, heroH, W, 155);
 
   const stats = [
+    { label: '🦅 老鹰', count: r.eagles ?? 0, color: '#C8972A' },
     { label: '🐦 小鸟', count: r.birdies ?? 0, color: '#C8972A' },
     { label: '◯ 帕', count: r.pars ?? 0, color: '#2D6A4F' },
-    { label: '+ 柏忌', count: r.bogeys ?? 0, color: '#E8534A' },
-    { label: '++ 双柏忌', count: r.doublePlusBogeys ?? 0, color: '#C0392B' },
+    { label: '＋柏忌', count: r.bogeys ?? 0, color: '#E8534A' },
+    { label: '＋＋双柏忌', count: r.doublePlusBogeys ?? 0, color: '#C0392B' },
   ];
   stats.forEach((s, i) => {
-    const x = 93 + i * 188;
+    const x = 75 + i * 150;
     ctx.textAlign = 'center';
     ctx.fillStyle = s.color;
     ctx.font = `bold 52px ${F}`;
